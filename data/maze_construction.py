@@ -1,20 +1,49 @@
 import networkx as nx
 import matplotlib.pyplot as plt
+import random
+import pickle
 
+# generate a 7x7 grid graph with randomly connected edges
 G = nx.Graph()
-G.add_node(1)
+grid_size = 7
+generated_graphs = 100
 
-G.add_nodes_from([
-    (4, {"color": "red"}),
-    (5, {"color": "green"}),
-])
+def generate_random_maze(size) :
+    for i in range(grid_size):
+        for j in range (grid_size):
+            G.add_node((i, j))
 
-print(G.number_of_nodes())
-print(G.number_of_edges())
+    for node in G.nodes():
+        num_edges = random.randint(0,4)
 
-G = nx.petersen_graph()
-subax1 = plt.subplot(121)
-nx.draw(G, with_labels=True, font_weight='bold')
-subax2 = plt.subplot(122)
-nx.draw_shell(G, nlist=[range(5, 10), range(5)], with_labels=True, font_weight='bold')
-plt.show()  
+        potential_neighbors = [
+            (node[0] - 1, node[1]), # left
+            (node[0] + 1, node[1]), # right
+            (node[0], node[1] - 1), # down
+            (node[0], node[1] + 1)  # up
+        ]
+
+        valid_neighbors = [nbr for nbr in potential_neighbors if nbr in G.nodes() and not G.has_edge(node, nbr)]
+
+        random.shuffle(valid_neighbors)
+
+        for nbr in valid_neighbors[:num_edges]:
+            if len(G.edges(nbr)) < 4:
+                G.add_edge(node, nbr)
+
+def store_graph(graph, file_name) :
+    with open(file_name, 'wb') as f:
+        pickle.dump(graph, f)
+
+def load_graph(file_name) :
+    with open(file_name, 'rb') as f:
+        return pickle.load(f)
+
+for i in range(generated_graphs): 
+    maze = generate_random_maze(grid_size)
+    store_graph(maze, f'maze_{i}.pkl')
+
+pos = dict((n, n) for n in G.nodes())
+
+nx.draw(G, pos, with_labels=True, node_size=800, font_size=10)
+plt.show()
