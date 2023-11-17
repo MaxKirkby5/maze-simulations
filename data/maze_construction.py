@@ -3,33 +3,8 @@ import matplotlib.pyplot as plt
 import random
 import pickle
 
-# generate a 7x7 grid graph with randomly connected edges
-G = nx.Graph()
-grid_size = 7
-generated_graphs = 100
-
-def generate_random_maze(size) :
-    for i in range(grid_size):
-        for j in range (grid_size):
-            G.add_node((i, j))
-
-    for node in G.nodes():
-        num_edges = random.randint(0,4)
-
-        potential_neighbors = [
-            (node[0] - 1, node[1]), # left
-            (node[0] + 1, node[1]), # right
-            (node[0], node[1] - 1), # down
-            (node[0], node[1] + 1)  # up
-        ]
-
-        valid_neighbors = [nbr for nbr in potential_neighbors if nbr in G.nodes() and not G.has_edge(node, nbr)]
-
-        random.shuffle(valid_neighbors)
-
-        for nbr in valid_neighbors[:num_edges]:
-            if len(G.edges(nbr)) < 4:
-                G.add_edge(node, nbr)
+# set parameters of generation and graph storage capacities
+num_graphs = 100
 
 def store_graph(graph, file_name) :
     with open(file_name, 'wb') as f:
@@ -39,11 +14,23 @@ def load_graph(file_name) :
     with open(file_name, 'rb') as f:
         return pickle.load(f)
 
-for i in range(generated_graphs): 
-    maze = generate_random_maze(grid_size)
-    store_graph(maze, f'maze_{i}.pkl')
+# generate a two-dimensional grid graph (7x7)
+G = nx.grid_2d_graph(7, 7)
 
-pos = dict((n, n) for n in G.nodes())
+# remove random edges from the 7x7 grid graph
+def random_maze(G):
+    edges_to_remove = [edge for edge in G.edges if random.random() < 0.5]
+    for edge in edges_to_remove:
+        G.remove_edge(edge[0], edge[1])
+        
+# generate defined number of random mazes
+def generate_random_maze() :
+    for i in range(num_graphs): 
+        maze = random_maze(G)
+        store_graph(maze, f'maze_{i}.pkl')
+generate_random_maze()
 
-nx.draw(G, pos, with_labels=True, node_size=800, font_size=10)
+# draw the mazes
+nx.draw(G, with_labels=True, node_size=800, font_size=10)
 plt.show()
+
