@@ -4,7 +4,7 @@ import random
 import pickle
 import math
 import numpy as np
-import itertools
+from scipy.spatial.distance import euclidean
 
 # generate a two-dimensional grid graph (7x7)
 G = nx.grid_2d_graph(7, 7)
@@ -129,26 +129,11 @@ def closed_component_check(graph) :
         return True
 print(closed_component_check(G))
 
-
 def maze_criteria(graph):
     if nx.is_connected(graph) and nx.number_of_edges(graph) < 46 and outer_edge_count(graph) < 19 and open_component_check(graph) == True and closed_component_check(graph) == True:
         return True
     else :
         return False
-
-#def maze_criteria(G): 
- #   if nx.is_connected(G) and nx.number_of_edges(G) < 46 and outer_edge_count(G) < 19:
-  #      return True
-
-
-
-
-
-
-
-
-
-
 
 pos2 = {(x, y): (x, y) for x, y in G2.nodes()}
 
@@ -172,36 +157,26 @@ combined_sizes = sizes_g + sizes_g2
 nx.draw(merged_graph, combined_pos, with_labels=True, node_color=combined_colors, node_size=combined_sizes, font_size=10)
 plt.show()
 
-
-
-# get euclidean distance
-def euc_distance(p1, p2):
-    return np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
-
-euc_dist = [euc_distance(p1, p2) for p1 in G.nodes() for p2 in G.nodes() if p1 < p2]
-
-# get shortest path distance
-sp_dist = [nx.shortest_path_length(G, source=p1, target=p2, weight=None) 
-    for p1 in G.nodes() for p2 in G.nodes() if p1 < p2]
-
-# get correlation coefficient
-corr_coefficient = np.corrcoef(euc_dist, sp_dist)[0, 1]
-
 # calculate maze fitness
-maze_fitness = 1 - abs(corr_coefficient)
-print(maze_fitness)
+def get_maze_fitness(graph):
+    euclidean_distances = [euclidean(p1, p2) for p1 in graph.nodes() for p2 in graph.nodes() if p1 < p2]
+    geodesic_distances = [nx.shortest_path_length(graph, source=p1, target=p2, weight=None)
+                    for p1 in graph.nodes() for p2 in graph.nodes() if p1 < p2]
+    correlation_coefficient = np.corrcoef(euclidean_distances, geodesic_distances)[0, 1]
+    return 1 - abs(correlation_coefficient)
 
-#def maze_criteria(G): 
- #   if nx.is_connected(G) and nx.number_of_edges(G) < 46 and outer_edge_count(G) < 19:
-  #      return True
 
+# Create empty list to store successful mazes (e.g. trying to get n=100)
+# While len(list) < 100, keep generating random mazes and storing them in the list (if it passes the criteria)
+# List comphrension to get the fitness of each maze in the list
 # generate defined number of random mazes
-#def generate_random_maze() :
- #   for i in range(num_graphs): 
-  #      maze = random_maze(G)
-   #     store_graph(maze, f'maze_{i}.pkl')
-#generate_random_maze()
-
+def generate_mazes():
+    for i in range(num_graphs):
+        maze = random_maze(G)
+        if maze_criteria(maze) == True:
+            maze
+            store_graph(maze, f'maze_{i}.pkl')
+            
 # draw the mazes
 nx.draw(G, pos, with_labels=True, node_size=800, font_size=10)
 plt.show()
