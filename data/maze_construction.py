@@ -4,6 +4,7 @@ import random
 import pickle
 import math
 import numpy as np
+import itertools
 
 # generate a two-dimensional grid graph (7x7)
 G = nx.grid_2d_graph(7, 7)
@@ -49,8 +50,6 @@ def outer_edge_count(G):
             outer_edge_count += 1
     return outer_edge_count
 
-print(outer_edge_count(G))
-
 # create coordinate system for overlayed graph 
 def merge(list1, list2):
     merged_list = []
@@ -62,20 +61,96 @@ def merge(list1, list2):
 m_nodes = [0.5, 1.5, 2.5, 3.5, 4.5, 5.5]
 n_nodes = [0.5, 1.5, 2.5, 3.5, 4.5, 5.5]
 merged_nodes = merge(m_nodes, n_nodes)
-
 G2 = nx.Graph()
 
-# create conditional graph creation function
-def conditional_G2_graph() :
-    for (x1, y1) in G.nodes():
-        get_neigh = list(G.neighbors((x1, y1)))
-        for neigh_node in get_neigh:
-            if G.has_edge((x1, y1), neigh_node):
-                G2.add_edge((min(m_nodes, key=lambda x:abs(x-x1)), min(n_nodes, key=lambda x:abs(x-y1))), (min(m_nodes, key=lambda x:abs(x-neigh_node[0])), min(n_nodes, key=lambda x:abs(x-neigh_node[1]))))
-conditional_G2_graph()
+def create_G2():
+ for i in m_nodes:
+    for j in n_nodes:
+        G2.add_node((i, j))
+create_G2()
 
-#G2.add_nodes_from(nodes_for_adding=merged_nodes)
-pos2 = {(x, y): (x, y) for x, y in merged_nodes}
+def conditional_G2_graph(G, G2):
+    for x1 in range(0, 6):
+        for y1 in range(0, 6):
+            node_G2 = (x1 + 0.5, y1 + 0.5)
+            right_neighbor = (x1 + 1.5, y1 + 0.5)
+            upper_neighbor = (x1 + 0.5, y1 + 1.5)
+            
+            # Corresponding nodes in G that would intersect with an edge in G2
+            if x1 < 5:  # Check to the right, but not for the last column
+                if not G.has_edge((x1 + 1, y1), (x1 + 1, y1 + 1)):
+                    G2.add_edge(node_G2, right_neighbor)
+            
+            if y1 < 5:  # Check above, but not for the top row
+                if not G.has_edge((x1, y1 + 1), (x1 + 1, y1 + 1)):
+                    G2.add_edge(node_G2, upper_neighbor)
+
+# Call the function with the two graphs
+conditional_G2_graph(G, G2)
+
+open_clusters = []
+closed_clusters = []
+
+def checking_paths(graph):
+    clusters = list(nx.connected_components(G2))
+    filtered_clusters = sorted([cluster for cluster in clusters if len(cluster) > 2], key=len, reverse=True)
+    for cluster in filtered_clusters:
+        for (x1, y1) in cluster:
+            if x1 == 0.5 :
+                if not G.has_edge((x1 - 0.5, y1+0.5), (x1-0.5, y1-0.5)):
+                    open_clusters.append(cluster)
+            if x1 == 5.5 :
+                if not G.has_edge((x1 + 0.5, y1+0.5), (x1+0.5, y1-0.5)):
+                    open_clusters.append(cluster)
+            if y1 == 5.5 :
+                if not G.has_edge((x1 - 0.5, y1+0.5), (x1+0.5, y1+0.5)):
+                    open_clusters.append(cluster)
+            if y1 == 0.5 :
+                if not G.has_edge((x1 - 0.5, y1-0.5), (x1+0.5, y1-0.5)):
+                    open_clusters.append(cluster)
+    for element in filtered_clusters :
+        if element not in open_clusters :
+            closed_clusters.append(element)
+    return open_clusters, closed_clusters
+
+def open_component_check(graph) :
+    checking_paths(graph)
+    if any(len(cluster) > 2 for cluster in open_clusters) : 
+        return False
+    else : 
+        return True
+print(open_component_check(G))
+
+def closed_component_check(graph) :
+    checking_paths(graph)
+    if any(len(cluster) > 7 for cluster in closed_clusters) : 
+        return False
+    else : 
+        return True
+print(closed_component_check(G))
+
+
+def maze_criteria(graph):
+    if nx.is_connected(graph) and nx.number_of_edges(graph) < 46 and outer_edge_count(graph) < 19 and open_component_check(graph) == True and closed_component_check(graph) == True:
+        return True
+    else :
+        return False
+
+#def maze_criteria(G): 
+ #   if nx.is_connected(G) and nx.number_of_edges(G) < 46 and outer_edge_count(G) < 19:
+  #      return True
+
+
+
+
+
+
+
+
+
+
+
+pos2 = {(x, y): (x, y) for x, y in G2.nodes()}
 
 # merge the two graphs
 pos = {node: node for node in G.nodes()}
@@ -98,17 +173,6 @@ nx.draw(merged_graph, combined_pos, with_labels=True, node_color=combined_colors
 plt.show()
 
 
-
-
-
-
-
-
-#closed_component_count(G)
-
-# function for assessing open connected component
-def open_component_count(G) :
-    print(list(nx.find_cliques(G)))
 
 # get euclidean distance
 def euc_distance(p1, p2):
