@@ -22,7 +22,6 @@ def random_maze(removed_edges=60):
 def outer_edge_count(graph):
     outer_edge_count = 0
     for ((x1, y1), (x2, y2)) in graph.edges():
-        # check if both nodes of the edge are on the perimeter
         if (x1 == 0 or x1 == 7 - 1 or y1 == 0 or y1 == 7 - 1) and \
            (x2 == 0 or x2 == 7 - 1 or y2 == 0 or y2 == 7 - 1):
             outer_edge_count += 1
@@ -76,7 +75,6 @@ def checking_paths(graph, inverse_graph):
     open_clusters = []
     closed_clusters = []
     clusters = list(nx.connected_components(inverse_graph))
-    # parameterise clusters by length
     filtered_clusters = sorted([cluster for cluster in clusters if len(cluster) > 2], key=len, reverse=True)
     
     for cluster in filtered_clusters:
@@ -148,7 +146,7 @@ def best_maze(num_init_mazes=100):
     good_mazes = generate_mazes(num_init_mazes)
     base_maze = max(good_mazes, key=get_maze_fitness)
     best_maze_fitness = get_maze_fitness(base_maze)
-    best_maze_config = base_maze.copy()  # copy best maze config
+    best_maze_config = base_maze.copy() 
     print(f"Initial best maze fitness: {best_maze_fitness}")
 
     all_possible_edges = list(graph.edges)
@@ -177,6 +175,6 @@ def best_maze(num_init_mazes=100):
     #nx.draw(best_maze_config, pos, with_labels=False, font_size=10)
     #plt.show()
 
-    return best_maze_config  # return best maze config 
+    return best_maze_config  
 
     
